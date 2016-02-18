@@ -44,11 +44,11 @@ public class HTTPRequest extends EngineRequest{
         this.path = path != null ? path : "";
         this.method = method != null ? method : "";
         Map javaQuery= query != null ? query : new HashMap<String, String>();
-        this.query = (ScriptObject) NashornConverter.instance().convert(scriptEngine, javaQuery);
+        this.query = (ScriptObject) NashornConverter.instance().convert(javaQuery);
         Map javaParams= params != null ? params : new HashMap<String, String>();
-        this.params = (ScriptObject) NashornConverter.instance().convert(scriptEngine, javaParams);
+        this.params = (ScriptObject) NashornConverter.instance().convert(javaParams);
         Map javaCookies= cookies != null ? cookies : new HashMap<String, String>();
-        this.cookies = (ScriptObject) NashornConverter.instance().convert(scriptEngine, javaCookies);
+        this.cookies = (ScriptObject) NashornConverter.instance().convert(javaCookies);
         this.accepted = accepted != null ? accepted : new ArrayList<String>();
         this.url = url != null ? url : "";
     }

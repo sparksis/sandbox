@@ -304,12 +304,7 @@ module = (typeof module == 'undefined') ? {} :  module;
 
     canonicalFilePath = pathParts.join('/')
     canonicalFilePath = normalizeName(canonicalFilePath, '.js')
-
-    if(nashornUtils.hasFile(canonicalFilePath)) {
-        return canonicalFilePath;
-    } else {
-        return false;
-    }
+    return canonicalFilePath;
   }
 
   function normalizeName(fileName, ext) {
@@ -324,6 +319,7 @@ module = (typeof module == 'undefined') ? {} :  module;
     var fileContents = nashornUtils.readFile(filename)
 
     if (fileContents == null) {
+        delete Require.cache[filename];
         throw new Error("Cannot get file: " + filename);
     }
     return fileContents;

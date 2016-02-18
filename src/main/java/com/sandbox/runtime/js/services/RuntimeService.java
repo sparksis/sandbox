@@ -26,7 +26,7 @@ public class RuntimeService extends Service {
         if(convertedState == null){
             String currentState = cache.getSandboxState(sandboxId);
             JsonNode state = new JsonNode(currentState);
-            convertedState = NashornConverter.instance().convert(sandboxScriptEngine.getEngine(), state.getJsonObject());
+            convertedState = NashornConverter.instance().convert(state.getJsonObject());
         }
 
         sandboxScriptEngine.getContext().setAttribute(

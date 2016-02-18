@@ -1,6 +1,7 @@
 package com.sandbox.runtime.js.converters;
 
 import com.sandbox.runtime.js.models.JSError;
+import jdk.nashorn.api.scripting.NashornScriptEngineFactory;
 import jdk.nashorn.internal.objects.Global;
 import jdk.nashorn.internal.objects.NativeJSON;
 import jdk.nashorn.internal.runtime.Context;
@@ -31,12 +32,18 @@ public class NashornConverter {
     static Constructor nativeArrayConstructor;
     static Class scriptEngineClass;
     static Method getGlobalMethod;
+    private ScriptEngine scriptEngine;
 
     private static final Logger logger = LoggerFactory.getLogger(NashornConverter.class);
 
+    public NashornConverter(ScriptEngine scriptEngine) {
+        this.scriptEngine = scriptEngine;
+    }
+
     public static NashornConverter instance() throws Exception {
         if(converter == null) {
-            converter = new NashornConverter();
+            ScriptEngine engine = new NashornScriptEngineFactory().getScriptEngine(new String[]{"--no-java"});
+            converter = new NashornConverter(engine);
             nativeArrayClass = Class.forName("jdk.nashorn.internal.objects.NativeArray");
             nativeArrayConstructor = nativeArrayClass.getDeclaredConstructor(ArrayData.class, Global.class);
             nativeArrayConstructor.setAccessible(true);
@@ -50,28 +57,33 @@ public class NashornConverter {
         return converter;
     }
 
-    public Object convert(ScriptEngine engine, Object object) throws Exception{
-        Global global = (Global) getGlobalMethod.invoke(engine, engine.getContext());
+    public Object convert(Object object) throws Exception{
+        Global global = (Global) getGlobalMethod.invoke(scriptEngine, scriptEngine.getContext());
         Object result = convert(global, object);
         return result;
 
     }
 
-    public String stringify(ScriptEngine engine, Object object) throws Exception {
+    public String stringify(Object object) throws Exception {
         Global currentGlobal = Context.getGlobal();
         if(currentGlobal == null) {
-            Global global = (Global) getGlobalMethod.invoke(engine, engine.getContext());
+            Global global = (Global) getGlobalMethod.invoke(scriptEngine, scriptEngine.getContext());
             Context.setGlobal(global);
         }
-        String result = (String) NativeJSON.stringify(null, object, null, 2);
-        Context.setGlobal(currentGlobal);
-        return result;
+        Object result = NativeJSON.stringify(null, object, null, 2);
+        if(Context.getGlobal() != currentGlobal) Context.setGlobal(currentGlobal);
+        if(!(result instanceof String)){
+            result = "null";
+            logger.warn("Serialized unsupported object, returning null..");
+        }
+
+        return (String) result;
     }
 
-    public Object parse(ScriptEngine engine, String text) throws Exception {
+    public Object parse(String text) throws Exception {
         Global currentGlobal = Context.getGlobal();
         if(currentGlobal == null) {
-            Global global = (Global) getGlobalMethod.invoke(engine, engine.getContext());
+            Global global = (Global) getGlobalMethod.invoke(scriptEngine, scriptEngine.getContext());
             Context.setGlobal(global);
         }
         Object result = NativeJSON.parse(null, text, null);

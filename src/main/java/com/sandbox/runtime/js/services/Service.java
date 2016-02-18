@@ -174,7 +174,7 @@ public abstract class Service {
     }
 
     protected void loadEmptyState() throws Exception{
-        setInScope("state", NashornConverter.instance().convert(sandboxScriptEngine.getEngine(), new JsonNode("{}").getJsonObject()), sandboxScriptEngine);
+        setInScope("state", NashornConverter.instance().convert(new JsonNode("{}").getJsonObject()), sandboxScriptEngine);
     }
 
     protected abstract void setState() throws Exception;

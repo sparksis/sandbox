@@ -1,6 +1,6 @@
 package com.sandbox.runtime.services;
 
-import com.sandbox.runtime.js.utils.NashornUtils;
+import com.sandbox.runtime.js.utils.NashornRuntimeUtils;
 import org.junit.Test;
 
 import java.util.Arrays;
@@ -62,7 +62,7 @@ public class LiquidRendererTest {
 
         Map<String, Object> vars = new HashMap<String, Object>();
         vars.put("name", "ando");
-        vars.put("__nashornUtils", new NashornUtils() {
+        vars.put("__nashornUtils", new NashornRuntimeUtils("1") {
             @Override
             public String jsonStringify(Object o) {
                 return null;
@@ -77,10 +77,6 @@ public class LiquidRendererTest {
                 }
             }
 
-            @Override
-            public boolean hasFile(String filename) {
-                return false;
-            }
         });
         String result = new LiquidRenderer().render("{% include 'blah' %}", vars);
         assertEquals("hi ando", result);
@@ -92,7 +88,7 @@ public class LiquidRendererTest {
 
         Map<String, Object> vars = new HashMap<String, Object>();
         vars.put("name", "ando");
-        vars.put("__nashornUtils", new NashornUtils() {
+        vars.put("__nashornUtils", new NashornRuntimeUtils("1") {
             @Override
             public String jsonStringify(Object o) {
                 return null;
@@ -107,10 +103,6 @@ public class LiquidRendererTest {
                 }
             }
 
-            @Override
-            public boolean hasFile(String filename) {
-                return false;
-            }
         });
         String result = new LiquidRenderer().render("{% include 'blah' with 'smth' %}", vars);
         assertEquals("hi ando", result);
@@ -122,7 +114,7 @@ public class LiquidRendererTest {
 
         Map<String, Object> vars = new HashMap<String, Object>();
         vars.put("name","ando");
-        vars.put("__nashornUtils", new NashornUtils() {
+        vars.put("__nashornUtils", new NashornRuntimeUtils("1") {
             @Override
             public String jsonStringify(Object o) {
                 return null;
@@ -133,10 +125,6 @@ public class LiquidRendererTest {
                 return null;
             }
 
-            @Override
-            public boolean hasFile(String filename) {
-                return false;
-            }
         });
         String result = new LiquidRenderer().render("{% include 'blah' %}", vars);
 

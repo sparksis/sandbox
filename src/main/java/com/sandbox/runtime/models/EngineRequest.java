@@ -39,7 +39,7 @@ public abstract class EngineRequest {
 
         // set default values
         Map javaHeaders = headers != null ? headers : new HashMap<String, String>();
-        this.headers = (ScriptObject) NashornConverter.instance().convert(scriptEngine, javaHeaders);
+        this.headers = (ScriptObject) NashornConverter.instance().convert(javaHeaders);
         this.properties = properties != null ? properties : new HashMap<String, String>();
         this.contentType = contentType != null ? contentType : "";
         this.ip = ip != null ? ip : "";
@@ -53,7 +53,7 @@ public abstract class EngineRequest {
                 if ("json".equalsIgnoreCase(this.contentType)) {
                     _body = new JsonNode((String) body).getJsonObject();
                     //convert java arrays/maps to JS ones
-                    _body = NashornConverter.instance().convert(scriptEngine, _body);
+                    _body = NashornConverter.instance().convert(_body);
 
                 } else if ("xml".equalsIgnoreCase(this.contentType)) {
                     _xmlDoc = new XMLDoc(body);

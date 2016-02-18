@@ -131,7 +131,7 @@ public class ServiceManager {
     private Service addConfigToService(Service result){
         Map<String, String> config = getConfig(result.sandboxId);
         try {
-            result.scriptObject.setConfig((ScriptObject) NashornConverter.instance().convert(result.getSandboxScriptEngine().getEngine(), config));
+            result.scriptObject.setConfig((ScriptObject) NashornConverter.instance().convert(config));
         } catch (Exception e) {
             logger.error("Error converting config", e);
         }
