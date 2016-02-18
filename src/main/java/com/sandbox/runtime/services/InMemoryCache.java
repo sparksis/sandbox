@@ -21,7 +21,9 @@ import java.nio.file.WatchEvent;
 import java.nio.file.WatchKey;
 import java.nio.file.WatchService;
 import java.nio.file.attribute.BasicFileAttributes;
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 import static java.nio.file.StandardWatchEventKinds.*;
@@ -72,8 +74,8 @@ public class InMemoryCache implements Cache {
     }
 
     @Override
-    public boolean hasRepositoryFile(String fullSandboxId, String filename) {
-        return (Files.exists(commandLine.getBasePath().resolve(filename)));
+    public List<String> getRepositoryFileList(String sandboxId, String commitId) {
+        return new ArrayList(fileContents.keySet());
     }
 
     @Override

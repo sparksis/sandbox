@@ -1,5 +1,8 @@
 package com.sandbox.runtime.js.utils;
 
+import com.sandbox.runtime.js.converters.NashornConverter;
+import jdk.nashorn.internal.runtime.ScriptObject;
+
 import java.util.Map;
 
 /**
@@ -27,8 +30,13 @@ public class NashornValidationUtils extends NashornUtils {
     }
 
     @Override
-    public boolean hasFile(String filename) {
-        return fileCache.containsKey(filename.trim());
+    public ScriptObject listFiles() {
+        try {
+            return (ScriptObject) NashornConverter.instance().convert(fileCache.keySet());
+        } catch (Exception e) {
+            logger.error("Error listing files", e);
+            return null;
+        }
     }
 
     public void setFileCache(Map<String, String> fileCache) {

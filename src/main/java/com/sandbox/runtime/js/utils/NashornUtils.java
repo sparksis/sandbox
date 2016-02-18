@@ -6,6 +6,7 @@ package com.sandbox.runtime.js.utils;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.sandbox.runtime.models.XMLDoc;
 import jdk.nashorn.internal.objects.NativeArray;
 import jdk.nashorn.internal.runtime.ScriptObject;
 import org.slf4j.Logger;
@@ -46,5 +47,15 @@ public abstract class NashornUtils {
 
     public abstract String readFile(String filename);
 
-    public abstract boolean hasFile(String filename);
+    public abstract ScriptObject listFiles();
+
+    public XMLDoc parseXml(String xml){
+        try {
+            return new XMLDoc(xml);
+        } catch (Exception e) {
+            logger.error("Error parsing xml", e);
+            return null;
+        }
+    }
+
 }

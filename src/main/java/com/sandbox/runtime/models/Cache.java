@@ -1,5 +1,6 @@
 package com.sandbox.runtime.models;
 
+import java.util.List;
 import java.util.Map;
 
 /**
@@ -8,7 +9,7 @@ import java.util.Map;
 public interface Cache {
     String getRepositoryFile(String fullSandboxId, String filename);
 
-    boolean hasRepositoryFile(String fullSandboxId, String filename);
+    List<String> getRepositoryFileList(String sandboxId, String commitId);
 
     String getSandboxState(String sandboxId);
 

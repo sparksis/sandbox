@@ -1,6 +1,8 @@
 package com.sandbox.runtime.js.utils;
 
+import com.sandbox.runtime.js.converters.NashornConverter;
 import com.sandbox.runtime.models.Cache;
+import jdk.nashorn.internal.runtime.ScriptObject;
 import org.springframework.beans.factory.annotation.Autowired;
 
 /**
@@ -25,8 +27,14 @@ public class NashornRuntimeUtils extends NashornUtils {
         return cache.getRepositoryFile(getFullSandboxId(), filename);
     }
 
-    public boolean hasFile(String filename) {
-        logger.debug("hasFile ({}) - {}", getFullSandboxId(),filename);
-        return cache.hasRepositoryFile(getFullSandboxId(), filename);
+    @Override
+    public ScriptObject listFiles() {
+        try {
+            return (ScriptObject) NashornConverter.instance().convert(cache.getRepositoryFileList(fullSandboxId, "head"));
+        } catch (Exception e) {
+            logger.error("Error listing files", e);
+            return null;
+        }
     }
+
 }
