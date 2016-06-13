@@ -80,7 +80,7 @@ public class HttpRequestHandler extends AbstractHandler {
 
     //handle is synchronized so that the JS processing is done on one thread.
     @Override
-    public synchronized void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException {
+    public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException {
         baseRequest.setHandled(true);
 
         //defaulted
@@ -94,7 +94,7 @@ public class HttpRequestHandler extends AbstractHandler {
             HttpRuntimeRequest runtimeRequest = servletConverter.httpServletToInstanceHttpRequest(request);
 
             //get a runtime service instance
-            RuntimeService runtimeService = (RuntimeService) serviceManager.getService(sandboxId, sandboxId);
+            RuntimeService runtimeService = (RuntimeService) serviceManager.getService(sandboxId, Thread.currentThread().getName());
 
             //create and lookup routing table
             RoutingTable routingTable = cache.getRoutingTableForSandboxId(sandboxId, sandboxId);
