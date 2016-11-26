@@ -3,7 +3,7 @@
   sandboxValidator(wrappedRequest, nashornUtils)
 
   var wrapCallback = function (callback) {
-    return function (callbackRequest, callbackResponse) {
+    return function (callbackRequest, callbackResponse, nextCallback) {
       _.each(callbackRequest._getAccessibleProperties(), function (property) {
         if (typeof callbackRequest[property] == 'function') {
           wrappedRequest[property] = function () {
@@ -15,83 +15,149 @@
           wrappedRequest._validationErrors = undefined
         }
       })
-      return callback(wrappedRequest, callbackResponse)
+      return callback(wrappedRequest, callbackResponse, nextCallback)
+    }
+  }
+
+  //map to maintain each unique route's chainCallback function, which wraps the define() callback and maintains an order callback list.
+  var chainCallbacks = {}
+
+  //function to wrap the define() callback that we return to nashorn, this function will maintain the list of define() function and construct next()
+  var chainCallback = function (callback, key, order) {
+    var existingChainCallback = chainCallbacks[key];
+
+    //if this is the first time we've seen this route, create its chainCallback, add to map.
+    if(existingChainCallback == undefined){
+      //create new chainCallback, add first to chain
+      var chainCallback = function(callbackRequest, callbackResponse, chainPosition){
+        chainPosition = chainPosition || 0;
+        var nextCallback = function() {
+          chainCallback(callbackRequest, callbackResponse, chainPosition+1)
+        }
+
+        //execute the callback given by the chainPosition, only called first function calling next()
+        var callbackToExecute;
+        if(chainCallback.callbacks[chainPosition]){
+          callbackToExecute = chainCallback.callbacks[chainPosition];
+        }else if(!chainCallback.callbacks[chainPosition] && chainCallback.defaultCallback){
+          callbackToExecute = chainCallback.defaultCallback;
+        }
+
+        //execute selected callback, pass req, res and next
+        callbackToExecute(callbackRequest, callbackResponse, nextCallback);
+      }
+      //add the first callback to the array for the function to iterate.
+      chainCallback.callbacks = [callback];
+      chainCallbacks[key] = chainCallback;
+      return chainCallback;
+
+    //if this is the 2nd+ time we've seen this route, add to the chain. Depending on the 'order' arg we might overwrite, insert or append.
+    }else {
+      //add new callback to chain depending on order, return existing wrappedCallback
+      if(order == undefined){
+        //if order is undefined then set as the default callback, special case
+          existingChainCallback.defaultCallback = callback;
+      }else if(order == -1){
+        //-1 so add to the end
+        existingChainCallback.callbacks.push(callback);
+      }else{
+        //if given an order add it in that position
+        existingChainCallback.callbacks.splice(order, 0, callback);
+      }
+      return existingChainCallback;
+    }
+  }
+
+  //<path> <method> <properties {}> <callback>
+  //<path> <properties {}> <callback>
+  //<path> <method> <callback>
+  //<path> <callback>
+  var httpFunction = function(order) {
+     return function(){
+       var callback;
+       var path;
+       var method;
+       var properties;
+
+       if(arguments.length == 4){
+         path = arguments[0];
+         method = arguments[1];
+         properties = arguments[2];
+         callback = arguments[3];
+
+       } else if(arguments.length == 3){
+         if(typeof arguments[1] == 'object'){
+           path = arguments[0];
+           method = 'GET'
+           properties = arguments[1];
+           callback = arguments[2];
+         }else if(typeof arguments[1] == 'string'){
+           path = arguments[0];
+           method = arguments[1];
+           properties = {};
+           callback = arguments[2];
+         }else{
+           throw new Error("Invalid route definition for " + method.toUpperCase() + " " + path + ", 2nd parameter should be a String or an Object")
+         }
+
+       } else{
+         path = arguments[0];
+         method = 'GET';
+         properties = {};
+         callback = arguments[1];
+       }
+
+       if(callback == undefined){
+         throw new Error("Invalid route definition for " + method.toUpperCase() + " " + path + ", given function is undefined")
+       }
+
+       var finalCallback = chainCallback(wrapCallback(callback), method + "," + path, order);
+       __mock.define('http', 'define', path, method, properties, callback, finalCallback, new Error())
+    }
+  }
+
+  //<path> <action> <callback>
+  //<path> <action> <operationName> <callback>
+  var soapFunction = function(){
+     var method = "POST";
+     var path = arguments[0];
+     var action = arguments[1];
+     if(arguments.length == 3 && typeof arguments[1] == 'string'){
+       var finalCallback = chainCallback(wrapCallback(arguments[2]), method + "," + path + "," + action, 0);
+       __mock.define('http', 'soap', path, method, {'SOAPAction': action}, arguments[2], finalCallback, new Error())
+
+     } else if(arguments.length == 4 && typeof  action == 'string'){
+       var finalCallback = chainCallback(wrapCallback(arguments[3]), method + "," + path + "," + action+ "," + arguments[2], 0);
+       __mock.define('http', 'soap', path, method, {'SOAPAction': action, 'SOAPOperationName':arguments[2]}, arguments[3], finalCallback, new Error())
+
+     }else{
+       throw new Error("Invalid route definition for " + method.toUpperCase() + " " + path + ", must have 3 parameters (path, action, function)")
+     }
+
+  }
+
+  //[<server{}>,]<queue>,<callback>
+  var jmsFunction = function(){
+    if(arguments.length == 3 && typeof arguments[0] == 'object'){
+      var finalCallback = chainCallback(wrapCallback(arguments[2]), JSON.stringify(arguments[0]) + "," + arguments[1], 0)
+      __mock.define('jms', 'jms', arguments[1], 'LISTEN', arguments[0], arguments[2], finalCallback, new Error())
+
+    }else if(arguments.length == 2 && typeof arguments[0] == 'string' && typeof arguments[1] == 'function'){
+      var finalCallback = chainCallback(wrapCallback(arguments[1]), arguments[0], 0)
+      __mock.define('jms', 'jms', arguments[0], 'LISTEN', {}, arguments[1], finalCallback, new Error())
+
+    }else{
+        throw new Error("Invalid JMS route definition, must have 2 or 3 parameters ([connection,] queue, function)")
     }
   }
 
   var mock = {
-
-    //<path> <method> <properties {}> <callback>
-    //<path> <properties {}> <callback>
-    //<path> <method> <callback>
-    //<path> <callback>
-    define: function(){
-      var callback;
-      var path;
-      var method;
-      var properties;
-
-      if(arguments.length == 4){
-        path = arguments[0];
-        method = arguments[1];
-        properties = arguments[2];
-        callback = arguments[3];
-
-      } else if(arguments.length == 3){
-        if(typeof arguments[1] == 'object'){
-          path = arguments[0];
-          method = 'GET'
-          properties = arguments[1];
-          callback = arguments[2];
-        }else if(typeof arguments[1] == 'string'){
-          path = arguments[0];
-          method = arguments[1];
-          properties = {};
-          callback = arguments[2];
-        }else{
-          throw new Error("Invalid route definition for " + method.toUpperCase() + " " + path + ", 2nd parameter should be a String or an Object")
-        }
-
-      } else{
-        path = arguments[0];
-        method = 'GET';
-        properties = {};
-        callback = arguments[1];
-      }
-
-      if(callback == undefined){
-        throw new Error("Invalid route definition for " + method.toUpperCase() + " " + path + ", given function is undefined")
-      }
-
-      __mock.define('http', 'define', path, method, properties, callback, wrapCallback(callback), new Error())
-    },
-    //<path> <action> <callback>
-    soap: function(){
-      if(arguments.length == 3 && typeof arguments[1] == 'string'){
-        __mock.define('http', 'soap', arguments[0], 'POST', {'SOAPAction':arguments[1]}, arguments[2], wrapCallback(arguments[2]), new Error())
-
-      } else if(arguments.length == 4 && typeof arguments[1] == 'string'){
-          __mock.define('http', 'soap', arguments[0], 'POST', {'SOAPAction':arguments[1], 'SOAPOperationName':arguments[2]}, arguments[3], wrapCallback(arguments[3]), new Error())
-
-      }else{
-        throw new Error("Invalid route definition for " + method.toUpperCase() + " " + path + ", must have 3 parameters (path, action, function)")
-      }
-
-    },
-    //[<server{}>,]<queue>,<callback>
-    jms: function(){
-      if(arguments.length == 3 && typeof arguments[0] == 'object'){
-          __mock.define('jms', 'jms', arguments[1], 'LISTEN', arguments[0], arguments[2], wrapCallback(arguments[2]), new Error())
-
-      }else if(arguments.length == 2 && typeof arguments[0] == 'string' && typeof arguments[1] == 'function'){
-        __mock.define('jms', 'jms', arguments[0], 'LISTEN', {}, arguments[1], wrapCallback(arguments[1]), new Error())
-
-      }else{
-          throw new Error("Invalid JMS route definition, must have 2 or 3 parameters ([connection,] queue, function)")
-      }
-    }
-
+    define: httpFunction(0),
+    default: httpFunction(), //set the order to undefined, so default calls get added to end of the chain
+    soap: soapFunction,
+    jms: jmsFunction
   }
+
   global.Sandbox = mock
   global.Sandmox = mock
   global.mock = mock

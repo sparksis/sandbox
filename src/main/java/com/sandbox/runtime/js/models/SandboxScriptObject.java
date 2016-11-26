@@ -22,7 +22,6 @@ import java.util.Optional;
 public class SandboxScriptObject implements ISandboxScriptObject{
     private HashMap<RouteDetails, ISandboxDefineCallback> routes = new HashMap<>();
     ScriptObject config;
-    RouteDetails currentRoute;
 
     public void define(String transport, String defineType, String path, String method, ScriptObject properties, ScriptFunction callback, ISandboxDefineCallback func, NativeError error) throws ServiceScriptException {
         Map<String, String> propertiesMap = new HashMap<>();
@@ -43,9 +42,6 @@ public class SandboxScriptObject implements ISandboxScriptObject{
         routeDetails.setFunctionSource(new ScriptSource(callback));
         routeDetails.setDefineSource(new ScriptSource(error, "<sandbox-internal>"));
         routeDetails.setDefineType(defineType);
-
-        //set property for extension classes
-        currentRoute = routeDetails;
 
         routes.put(routeDetails, func);
     }
