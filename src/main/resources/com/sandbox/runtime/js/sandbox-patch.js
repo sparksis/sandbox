@@ -373,10 +373,24 @@ module = (typeof module == 'undefined') ? {} :  module;
     })
 
     canonicalFilePath = pathParts.join('/')
+
+    //if we don't match the asked for file, it might be a directory so try and append index.js
+    var canonicalFilePathWithIndex
+    if(canonicalFilePath.endsWith(".js")){
+      canonicalFilePathWithIndex = canonicalFilePath.substring(0, canonicalFilePath.length - 3) + "/index.js";
+    }else if(canonicalFilePath.endsWith("/")){
+      canonicalFilePathWithIndex = canonicalFilePath + "index.js";
+    }else {
+      canonicalFilePathWithIndex = canonicalFilePath + "/index.js";
+    }
+
+    //normalise name for standard require() entry, add a .js to the end if missing
     canonicalFilePath = normalizeName(canonicalFilePath)
 
     if(nashornUtils.hasFile(canonicalFilePath)) {
         return canonicalFilePath;
+    } else if(nashornUtils.hasFile(canonicalFilePathWithIndex)) {
+        return canonicalFilePathWithIndex;
     } else {
         return false;
     }
