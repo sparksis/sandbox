@@ -18,9 +18,10 @@ WORKDIR /app
 RUN gradle build
 RUN mkdir /sandbox && cp ./build/libs/app-*-all.jar ./sandbox.jar
 
-# Cleanup gradle to reduce diskspace
-RUN rm -rf ${GRADLE_HOME} /opt/${GRADLE_DISTRIBUTION} 
+RUN adduser -h /sandbox -S sandbox
+RUN chown sandbox: -R /sandbox
 
+USER sandbox
 WORKDIR /sandbox
 CMD java \
   -XX:+UnlockExperimentalVMOptions \
